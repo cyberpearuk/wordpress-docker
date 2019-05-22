@@ -1,0 +1,13 @@
+sudo: required
+
+services:
+  - docker
+
+script:
+  - docker build -t jbuncle/cloudflare-ddclient .
+
+deploy:
+  provider: script
+  script: bash deploy.sh
+  on:
+    branch: master
