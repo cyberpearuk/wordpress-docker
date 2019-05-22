@@ -4,7 +4,7 @@ services:
   - docker
 
 script:
-  - docker build -t jbuncle/cloudflare-ddclient .
+  - docker build -t cyberpearuk/wordpress-docker .
 
 deploy:
   provider: script
