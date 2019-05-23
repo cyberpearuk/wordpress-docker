@@ -2,7 +2,7 @@ FROM wordpress:5-php7.1-apache
 
 # Add ssmtp
 RUN apt-get update \
- && apt-get install -y ssmtp \
+ && apt-get install -y ssmtp unzip \
  && rm -rf /var/lib/apt/lists/*
 
 
