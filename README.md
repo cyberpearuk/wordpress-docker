@@ -1,7 +1,5 @@
 # Custom WordPress Docker Image
 
-Image for running ddclient for a cloudflare account.
-
 ## Environment Variables
 
 ### Mountable Environment Variables
@@ -22,3 +20,14 @@ For my purposes TLS is on and not configurable out the box.
 
 ### Web Server
 - VIRTUAL_HOST - The server host name (used for ServerName)
+
+
+## Notes
+### Sendmail
+
+As this container was originally created to help support sending emails it includes a bash script `test-sendmail <email-address>`
+ which will send a test email both via PHP but also sendmail directly (over bash CLI).
+
+```bash
+docker exec -it <container> test-sendmail me@mail.com
+```
