@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 echo "Setting up"
@@ -29,6 +29,9 @@ FromLineOverride=YES
 " > /etc/ssmtp/ssmtp.conf
 
 echo "root:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT" > /etc/ssmtp/revaliases
+
+# Clear $EMAIL_AUTH_PASS to prevent leaking to applications
+export EMAIL_AUTH_PASS=""
 
 # Set ServerName - Prevents warnings
 IFS=',' read -r FIRSTHOST OTHER_HOSTS <<< "$VIRTUAL_HOST"
