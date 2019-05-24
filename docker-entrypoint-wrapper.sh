@@ -28,7 +28,10 @@ UseSTARTTLS=YES
 FromLineOverride=YES
 " > /etc/ssmtp/ssmtp.conf
 
-echo "root:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT" > /etc/ssmtp/revaliases
+echo "
+root:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
+www-data:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
+" > /etc/ssmtp/revaliases
 
 # Clear $EMAIL_AUTH_PASS to prevent leaking to applications
 export EMAIL_AUTH_PASS=""
