@@ -8,6 +8,8 @@ RUN apt-get update \
     libz-dev libmemcached-dev  \
  && rm -rf /var/lib/apt/lists/*
 
+# Add pdo
+RUN docker-php-ext-install pdo pdo_mysql
 
 ADD docker-entrypoint-wrapper.sh /usr/local/bin/docker-entrypoint-wrapper
 ADD test-sendmail.sh /usr/local/bin/test-sendmail
