@@ -12,12 +12,17 @@ if test -f "/var/common/.env"; then
      done <<< $(grep -v '^$\|^\s*\#' /var/common/.env)
 fi
 
-## SETUP MAIL ##
-echo "[mail function]
+
+if [ -z ${EMAIL_SMTP_HOST+x} ]; then
+    echo "Not setting up mail"
+else
+    echo "Setting up mail"
+    ## SETUP MAIL ##
+    echo "[mail function]
 sendmail_path=/usr/sbin/ssmtp -t -i
 " >> /usr/local/etc/php/conf.d/sendmail.ini
 
-echo "
+    echo "
 mailhub=$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
 rewriteDomain=$EMAIL_HOST
 AuthUser=$EMAIL_AUTH_USER
@@ -28,13 +33,16 @@ UseSTARTTLS=YES
 FromLineOverride=YES
 " > /etc/ssmtp/ssmtp.conf
 
-echo "
+    echo "
 root:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
 www-data:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
 " > /etc/ssmtp/revaliases
 
-# Clear $EMAIL_AUTH_PASS to prevent leaking to applications
-export EMAIL_AUTH_PASS=""
+    # Clear $EMAIL_AUTH_PASS to prevent leaking to applications
+    export EMAIL_AUTH_PASS=""
+
+fi
+
 
 # Set ServerName - Prevents warnings
 IFS=',' read -r FIRSTHOST OTHER_HOSTS <<< "$VIRTUAL_HOST"

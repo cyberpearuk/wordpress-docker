@@ -11,15 +11,11 @@ RUN apt-get update \
 # Add pdo
 RUN docker-php-ext-install pdo pdo_mysql
 
-ADD docker-entrypoint-wrapper.sh /usr/local/bin/docker-entrypoint-wrapper
-ADD test-sendmail.sh /usr/local/bin/test-sendmail
-
-
 RUN pecl install memcached \
- && echo extension=memcached.so >> /usr/local/etc/php/conf.d/memcached.ini \
- && chmod +x /usr/local/bin/docker-entrypoint-wrapper \
- && chmod +x /usr/local/bin/test-sendmail
+ && echo extension=memcached.so >> /usr/local/etc/php/conf.d/memcached.ini
 
+ADD test-sendmail.sh /usr/local/bin/test-sendmail
+ADD docker-entrypoint-wrapper.sh /usr/local/bin/docker-entrypoint-wrapper
 
 ENTRYPOINT ["docker-entrypoint-wrapper"]
 CMD ["apache2-foreground"]
