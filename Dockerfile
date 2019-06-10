@@ -22,6 +22,12 @@ RUN apt-get update \
     && docker-php-ext-install memcached \
     && rm /tmp/memcached.tar.gz
 
+RUN { \
+        echo 'upload_max_filesize = 64M'; \
+        echo 'post_max_size = 64M'; \
+        echo 'memory_limit = 64M ;'; \
+    } > /usr/local/etc/php/conf.d/uploads.ini
+
 ADD test-sendmail.sh /usr/local/bin/test-sendmail
 ADD docker-entrypoint-wrapper.sh /usr/local/bin/docker-entrypoint-wrapper
 
