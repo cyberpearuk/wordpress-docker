@@ -5,14 +5,22 @@ RUN apt-get update \
  && apt-get install -y \
     ssmtp \
     unzip \
-    libz-dev libmemcached-dev  \
  && rm -rf /var/lib/apt/lists/*
 
 # Add pdo
 RUN docker-php-ext-install pdo pdo_mysql
 
-RUN pecl install memcached \
- && echo extension=memcached.so >> /usr/local/etc/php/conf.d/memcached.ini
+# Install memcach
+RUN apt-get update \
+ && apt-get install -y \
+    libz-dev libmemcached-dev  \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -L -o /tmp/memcached.tar.gz "https://github.com/php-memcached-dev/php-memcached/archive/php7.tar.gz" \
+    && mkdir -p /usr/src/php/ext/memcached \
+    && tar -C /usr/src/php/ext/memcached -zxvf /tmp/memcached.tar.gz --strip 1 \
+    && docker-php-ext-configure memcached \
+    && docker-php-ext-install memcached \
+    && rm /tmp/memcached.tar.gz
 
 ADD test-sendmail.sh /usr/local/bin/test-sendmail
 ADD docker-entrypoint-wrapper.sh /usr/local/bin/docker-entrypoint-wrapper
