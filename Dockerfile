@@ -1,7 +1,6 @@
-## START OFFICIAL WP IMAGE
 FROM php:7.1-apache
 
-# install the PHP extensions we need (https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions)
+# Setup environment for WordPress and Tools (https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions)
 RUN set -ex; \
 	\
 	savedAptMark="$(apt-mark showmanual)"; \
@@ -11,6 +10,12 @@ RUN set -ex; \
 		libjpeg-dev \
 		libmagickwand-dev \
 		libpng-dev \
+                # Install ssmtp
+                ssmtp \
+                # Install unzip
+                unzip \
+                # Install memcache dependencies =
+                libz-dev libmemcached-dev  \
 	; \
 	\
 	docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
@@ -21,9 +26,18 @@ RUN set -ex; \
 		mysqli \
 		opcache \
 		zip \
+                # Install PDO
+                pdo pdo_mysql \
 	; \
 	pecl install imagick-3.4.4; \
 	docker-php-ext-enable imagick; \
+        # Install memcache
+        curl -L -o /tmp/memcached.tar.gz "https://github.com/php-memcached-dev/php-memcached/archive/php7.tar.gz" \
+            && mkdir -p /usr/src/php/ext/memcached \
+            && tar -C /usr/src/php/ext/memcached -zxvf /tmp/memcached.tar.gz --strip 1 \
+            && docker-php-ext-configure memcached \
+            && docker-php-ext-install memcached \
+            && rm /tmp/memcached.tar.gz ; \
 	\
 # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
 	apt-mark auto '.*' > /dev/null; \
@@ -37,62 +51,40 @@ RUN set -ex; \
 		| xargs -rt apt-mark manual; \
 	\
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
-	rm -rf /var/lib/apt/lists/*
+	rm -rf /var/lib/apt/lists/* ; \
+        # Enable mod rewrite and expires apache modules
+        a2enmod rewrite expires
+        
+# Setup php.ini settings
+COPY ini/*.ini /usr/local/etc/php/conf.d/
 
-# set recommended PHP.ini settings
-ADD opcache-recommended.ini /usr/local/etc/php/conf.d/opcache-recommended.ini
-ADD error-logging.ini /usr/local/etc/php/conf.d/error-logging.ini
-
-RUN a2enmod rewrite expires
-
-VOLUME /var/www/html
-
-ENV WORDPRESS_VERSION 5.2.1
-ENV WORDPRESS_SHA1 65913a39b2e8990ece54efbfa8966fc175085794
-
+# Install wordpress
 RUN set -ex; \
-	curl -o wordpress.tar.gz -fSL "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"; \
-	echo "$WORDPRESS_SHA1 *wordpress.tar.gz" | sha1sum -c -; \
-# upstream tarballs include ./wordpress/ so this gives us /usr/src/wordpress
+	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-5.2.1-en_GB.tar.gz"; \
+	echo "8758665200c5a366887866383c9077d3d9d96c39 *wordpress.tar.gz" | sha1sum -c -; \
 	tar -xzf wordpress.tar.gz -C /usr/src/; \
+        mv /usr/src/wordpress/* /var/www/html/ ; \
 	rm wordpress.tar.gz; \
-	chown -R www-data:www-data /usr/src/wordpress
+        rm wp-config-sample.php
 
-COPY docker-entrypoint.sh /usr/local/bin/
+# Add htaccess and config
+COPY .htaccess wp-config.php ./
 
+# Copy scripts
+COPY scripts/* /usr/local/bin/
 
-## END OFFICIAL WP
+# Setup file permissions
+RUN mkdir /var/www/html/settings ; \
+    mkdir /var/www/html/wp-content/uploads ; \
+    echo "Deny from all" > /var/www/html/settings/.htaccess ; \
+    echo "Deny from all" > /var/www/html/wp-content/uploads/.htaccess ; \
+    chown -R www-data:www-data /var/www/html ; \
+    find /var/www/html -type d -exec chmod 750 {} \; ; \
+    find /var/www/html -type f -exec chmod 640 {} \;
 
-# Add ssmtp
-RUN apt-get update \
- && apt-get install -y \
-    ssmtp \
-    unzip \
- && rm -rf /var/lib/apt/lists/*
+# Define volumes for persistent data
+VOLUME /var/www/html/wp-content
+VOLUME /var/www/html/settings
 
-# Add pdo
-RUN docker-php-ext-install pdo pdo_mysql
-
-# Install memcach
-RUN apt-get update \
- && apt-get install -y \
-    libz-dev libmemcached-dev  \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -L -o /tmp/memcached.tar.gz "https://github.com/php-memcached-dev/php-memcached/archive/php7.tar.gz" \
-    && mkdir -p /usr/src/php/ext/memcached \
-    && tar -C /usr/src/php/ext/memcached -zxvf /tmp/memcached.tar.gz --strip 1 \
-    && docker-php-ext-configure memcached \
-    && docker-php-ext-install memcached \
-    && rm /tmp/memcached.tar.gz
-
-RUN { \
-        echo 'upload_max_filesize = 64M'; \
-        echo 'post_max_size = 64M'; \
-        echo 'memory_limit = 64M ;'; \
-    } > /usr/local/etc/php/conf.d/uploads.ini
-
-ADD test-sendmail.sh /usr/local/bin/test-sendmail
-ADD docker-entrypoint-wrapper.sh /usr/local/bin/docker-entrypoint-wrapper
-
-ENTRYPOINT ["docker-entrypoint-wrapper"]
+ENTRYPOINT ["docker-entrypoint"]
 CMD ["apache2-foreground"]

@@ -48,5 +48,15 @@ fi
 IFS=',' read -r FIRSTHOST OTHER_HOSTS <<< "$VIRTUAL_HOST"
 echo "ServerName $FIRSTHOST" >> /etc/apache2/apache2.conf
 
+
+# Create salts file if not exist
+test -f "settings/wp-salt.php"|| {
+    echo "<?php"
+    curl https://api.wordpress.org/secret-key/1.1/salt/ 
+} > settings/wp-salt.php
+
+chown www-data:www-data /var/www/html/wp-content ; chmod 755 /var/www/html/wp-content
+
+
 # Execute original entrypoint from core wordpress docker image
-exec docker-entrypoint.sh "$@"
+exec "$@"
