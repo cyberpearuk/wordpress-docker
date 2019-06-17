@@ -4,6 +4,10 @@ function getEnvVar($varname, $default = false) {
     $env = getenv($varname);
     if ($env === false) {
         return $default;
+    } else if ($env === 'true') {
+        return true;
+    } else if ($env === 'false') {
+        return false;
     } else {
         // Clear variable
         putenv($varname);
