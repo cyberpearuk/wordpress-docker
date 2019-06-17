@@ -14,8 +14,6 @@ RUN set -ex; \
                 ssmtp \
                 # Install unzip
                 unzip \
-                # Install memcache dependencies =
-                libz-dev libmemcached-dev  \
 	; \
 	\
 	docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
@@ -31,13 +29,6 @@ RUN set -ex; \
 	; \
 	pecl install imagick-3.4.4; \
 	docker-php-ext-enable imagick; \
-        # Install memcache
-        curl -L -o /tmp/memcached.tar.gz "https://github.com/php-memcached-dev/php-memcached/archive/php7.tar.gz" \
-            && mkdir -p /usr/src/php/ext/memcached \
-            && tar -C /usr/src/php/ext/memcached -zxvf /tmp/memcached.tar.gz --strip 1 \
-            && docker-php-ext-configure memcached \
-            && docker-php-ext-install memcached \
-            && rm /tmp/memcached.tar.gz ; \
 	\
 # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
 	apt-mark auto '.*' > /dev/null; \
@@ -50,18 +41,38 @@ RUN set -ex; \
 		| sort -u \
 		| xargs -rt apt-mark manual; \
 	\
-	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+#	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
 	rm -rf /var/lib/apt/lists/* ; \
         # Enable mod rewrite and expires apache modules
         a2enmod rewrite expires
-        
+
+# Install memcache            
+RUN apt-get update && apt-get install -y libz-dev libmemcached-dev && rm -rf /var/lib/apt/lists/* \
+    && curl -L -o /tmp/memcached.tar.gz "https://github.com/php-memcached-dev/php-memcached/archive/php7.tar.gz" \
+    && mkdir -p /usr/src/php/ext/memcached \
+    && tar -C /usr/src/php/ext/memcached -zxvf /tmp/memcached.tar.gz --strip 1 \
+    && docker-php-ext-configure memcached \
+    && docker-php-ext-install memcached \
+    && rm /tmp/memcached.tar.gz ;
+
+# Install and configure modsecurity
+RUN apt-get update && apt-get install -y libapache2-modsecurity && rm -rf /var/lib/apt/lists/* \
+    && a2enmod security2 \
+    && cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecRuleEngine DetectionOnly|SecRuleEngine On|g"  /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecResponseBodyAccess On|SecResponseBodyAccess Off|g"  /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecStatusEngine On|SecStatusEngine Off|g"  /etc/modsecurity/modsecurity.conf 
+
 # Setup php.ini settings
 COPY ini/*.ini /usr/local/etc/php/conf.d/
+
+# Copy additional apache2 config files
+COPY apache-conf/* /etc/apache2/mods-available/
 
 # Install wordpress
 RUN set -ex; \
 	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-5.2.1-en_GB.tar.gz"; \
-	echo "8758665200c5a366887866383c9077d3d9d96c39 *wordpress.tar.gz" | sha1sum -c -; \
+	echo "02e382ac8bad4ebb18a2c6c7fe94453aeddfc18d *wordpress.tar.gz" | sha1sum -c -; \
 	tar -xzf wordpress.tar.gz -C /usr/src/; \
         mv /usr/src/wordpress/* /var/www/html/ ; \
 	rm wordpress.tar.gz; \
