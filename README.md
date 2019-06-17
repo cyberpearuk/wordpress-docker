@@ -1,5 +1,9 @@
 # Custom WordPress Docker Image
 
+Tailored docker image for running wordpress.
+
+Comes with security steps built in.
+
 ## Environment Variables
 
 ### Mountable Environment Variables
