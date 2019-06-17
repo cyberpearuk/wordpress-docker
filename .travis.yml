@@ -4,10 +4,10 @@ services:
   - docker
 
 script:
-  - docker build -t cyberpearuk/wordpress-docker .
+  - docker build -t $TRAVIS_REPO_SLUG:2 .
 
 deploy:
   provider: script
-  script: bash deploy.sh
+  script: bash deploy.sh $TRAVIS_REPO_SLUG:2
   on:
     branch: master
