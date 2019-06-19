@@ -75,8 +75,8 @@ COPY apache-conf/* /etc/apache2/mods-available/
 
 # Install wordpress
 RUN set -ex; \
-	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-5.2.1-en_GB.tar.gz"; \
-	echo "02e382ac8bad4ebb18a2c6c7fe94453aeddfc18d *wordpress.tar.gz" | sha1sum -c -; \
+	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-5.2.2-en_GB.tar.gz"; \
+	echo "b5d233c3811deef9fe095206becd3f9ab83e3580 *wordpress.tar.gz" | sha1sum -c -; \
 	tar -xzf wordpress.tar.gz -C /usr/src/; \
         mv /usr/src/wordpress/* /var/www/html/ ; \
 	rm wordpress.tar.gz; \
