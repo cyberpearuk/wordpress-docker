@@ -1,23 +1,27 @@
 FROM php:7.1-apache
 
+# Install and configure modsecurity
+RUN apt-get update && apt-get install -y libapache2-modsecurity && rm -rf /var/lib/apt/lists/* \
+    && a2enmod security2 \
+    && cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecRuleEngine DetectionOnly|SecRuleEngine On|g"  /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecResponseBodyAccess On|SecResponseBodyAccess Off|g"  /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecStatusEngine On|SecStatusEngine Off|g"  /etc/modsecurity/modsecurity.conf \
+    # Set memory limit to ~64MB
+    && sed -i "s|SecRequestBodyLimit 13107200|SecRequestBodyLimit 67108864|g"  /etc/modsecurity/modsecurity.conf
+
 # Setup environment for WordPress and Tools (https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions)
-RUN set -ex; \
-	\
-	savedAptMark="$(apt-mark showmanual)"; \
-	\
-	apt-get update; \
-	apt-get install -y --no-install-recommends \
-		libjpeg-dev \
-		libmagickwand-dev \
-		libpng-dev \
-                # Install ssmtp
-                ssmtp \
-                # Install unzip
-                unzip \
-	; \
-	\
-	docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
-	docker-php-ext-install \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libjpeg-dev \
+        libmagickwand-dev \
+        libpng-dev \
+        # Install ssmtp
+        ssmtp \
+        # Install unzip
+        unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
+    && docker-php-ext-install \
 		bcmath \
 		exif \
 		gd \
@@ -26,46 +30,9 @@ RUN set -ex; \
 		zip \
                 # Install PDO
                 pdo pdo_mysql \
-	; \
-	pecl install imagick-3.4.4; \
-	docker-php-ext-enable imagick; \
-	\
-# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
-	apt-mark auto '.*' > /dev/null; \
-	apt-mark manual $savedAptMark; \
-	ldd "$(php -r 'echo ini_get("extension_dir");')"/*.so \
-		| awk '/=>/ { print $3 }' \
-		| sort -u \
-		| xargs -r dpkg-query -S \
-		| cut -d: -f1 \
-		| sort -u \
-		| xargs -rt apt-mark manual; \
-	\
-#	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
-	rm -rf /var/lib/apt/lists/* ; \
-        # Enable mod rewrite and expires apache modules
-        a2enmod rewrite expires
-
-# Install memcache            
-RUN apt-get update && apt-get install -y libz-dev libmemcached-dev && rm -rf /var/lib/apt/lists/* \
-    && curl -L -o /tmp/memcached.tar.gz "https://github.com/php-memcached-dev/php-memcached/archive/php7.tar.gz" \
-    && mkdir -p /usr/src/php/ext/memcached \
-    && tar -C /usr/src/php/ext/memcached -zxvf /tmp/memcached.tar.gz --strip 1 \
-    && docker-php-ext-configure memcached \
-    && docker-php-ext-install memcached \
-    && rm /tmp/memcached.tar.gz ;
-
-# Install and configure modsecurity
-RUN apt-get update && apt-get install -y libapache2-modsecurity && rm -rf /var/lib/apt/lists/* \
-    && a2enmod security2 \
-    && cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecRuleEngine DetectionOnly|SecRuleEngine On|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecResponseBodyAccess On|SecResponseBodyAccess Off|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecStatusEngine On|SecStatusEngine Off|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecRequestBodyLimit 13107200|SecRequestBodyLimit 67108864|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecRequestBodyNoFilesLimit 13107200|SecRequestBodyNoFilesLimit 67108864|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecRequestBodyInMemoryLimit 13107200|SecRequestBodyInMemoryLimit 67108864|g"  /etc/modsecurity/modsecurity.conf
-
+    && pecl install imagick-3.4.4  \
+    && docker-php-ext-enable imagick \
+    && a2enmod rewrite expires       
 
 # Setup php.ini settings
 COPY ini/*.ini /usr/local/etc/php/conf.d/
@@ -76,11 +43,19 @@ COPY apache-conf/* /etc/apache2/mods-available/
 # Install wordpress
 RUN set -ex; \
 	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-5.2.2-en_GB.tar.gz"; \
-	echo "b5d233c3811deef9fe095206becd3f9ab83e3580 *wordpress.tar.gz" | sha1sum -c -; \
+	echo "1f3af9172a9f2b89df784d547b215ea3a067f45e *wordpress.tar.gz" | sha1sum -c -; \
 	tar -xzf wordpress.tar.gz -C /usr/src/; \
         mv /usr/src/wordpress/* /var/www/html/ ; \
 	rm wordpress.tar.gz; \
         rm wp-config-sample.php
+
+# Install tools
+RUN curl -sS https://getcomposer.org/installer | php \
+  && chmod +x composer.phar \
+  && php composer.phar global require cyberpearuk/wp-db-tools:1.3.0 \
+  # Remove composer now, we shouldn't need it after this
+  && rm composer.phar
+ENV PATH="/root/.composer/vendor/bin:${PATH}"
 
 # Add htaccess and config
 COPY .htaccess wp-config.php ./

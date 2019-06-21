@@ -25,8 +25,33 @@ For my purposes TLS is on and not configurable out the box.
 ### Web Server
 - VIRTUAL_HOST - The server host name (used for ServerName)
 
-
 ## Notes
+
+### Ephemeral WordPress Installation
+
+With the official image, WordPress is actually installed on first run
+- i.e. it copies across WordPress if it's not in the installation directory already.
+
+This image comes with WordPress installed already. The WordPress installation is therefore ephemeral as we are only setting 
+up a volume for the wp-content directory, not the entire WordPress install. 
+This means that the image itself controls the WordPress version, this can make it easier to control 
+exactly what is running and where (one of the main benefits of Docker!).
+
+### Dynamic Environment Variables
+
+The official image only uses the environment variables the first time
+ (therefore the environment variables become meaningless after the first run).
+
+The environment variables in this image continue to be referenced, i.e. if you change your database creds, all you need to do is 
+update the environment variables and restart (in the official WP you'd have to change them inside the running container).
+
+To achieve this wp-config.php is also ephemeral as it uses the environment variables directly from PHP. The installation specific content
+such as the WordPress salts are put in a separate volume.
+
+### Mod Security
+
+This image has a basic setup of mod security with it's apache setup.
+
 ### Sendmail
 
 As this container was originally created to help support sending emails it includes a bash script `test-sendmail <email-address>`
@@ -35,3 +60,7 @@ As this container was originally created to help support sending emails it inclu
 ```bash
 docker exec -it <container> test-sendmail me@mail.com
 ```
+
+## Maintainer
+
+This repository is maintained by https://www.cyberpear.co.uk.
