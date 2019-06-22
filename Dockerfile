@@ -8,7 +8,9 @@ RUN apt-get update && apt-get install -y libapache2-modsecurity && rm -rf /var/l
     && sed -i "s|SecResponseBodyAccess On|SecResponseBodyAccess Off|g"  /etc/modsecurity/modsecurity.conf \
     && sed -i "s|SecStatusEngine On|SecStatusEngine Off|g"  /etc/modsecurity/modsecurity.conf \
     # Set memory limit to ~64MB
-    && sed -i "s|SecRequestBodyLimit 13107200|SecRequestBodyLimit 67108864|g"  /etc/modsecurity/modsecurity.conf
+    && sed -i "s|SecRequestBodyLimit 13107200|SecRequestBodyLimit 67108864|g"  /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecRequestBodyNoFilesLimit 13107200|SecRequestBodyNoFilesLimit 67108864|g"  /etc/modsecurity/modsecurity.conf \
+    && sed -i "s|SecRequestBodyInMemoryLimit 13107200|SecRequestBodyInMemoryLimit 67108864|g"  /etc/modsecurity/modsecurity.conf
 
 # Setup environment for WordPress and Tools (https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions)
 RUN apt-get update && apt-get install -y --no-install-recommends \
