@@ -15,6 +15,11 @@ function getEnvVar($varname, $default = false) {
     }
 }
 
+// Fix for HTTP 301 Redirect loop when using SSL behind reverse proxy.
+if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
+   $_SERVER['HTTPS']='on';
+}
+
 define('DB_NAME', getEnvVar('WORDPRESS_DB_NAME', 'wordpress'));
 define('DB_USER', getEnvVar('WORDPRESS_DB_USER'));
 define('DB_PASSWORD', getEnvVar('WORDPRESS_DB_PASSWORD'));
