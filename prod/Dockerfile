@@ -77,7 +77,6 @@ COPY scripts/* /usr/local/bin/
 RUN mkdir /var/www/html/settings ; \
     mkdir /var/www/html/wp-content/uploads ; \
     echo "Deny from all" > /var/www/html/settings/.htaccess ; \
-    echo "Deny from all" > /var/www/html/wp-content/uploads/.htaccess ; \
     chown -R www-data:www-data /var/www/html ; \
     find /var/www/html -type d -exec chmod 750 {} \; ; \
     find /var/www/html -type f -exec chmod 640 {} \;
