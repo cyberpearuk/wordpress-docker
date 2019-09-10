@@ -1,4 +1,4 @@
-FROM php:7.1-apache AS production
+FROM php:7.1.29-apache AS production
 
 ARG MODSEC_VER=v3.1.1
 
