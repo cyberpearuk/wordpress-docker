@@ -1,13 +1,16 @@
-FROM php:7.1-apache
+FROM php:7.1-apache AS production
+
+ARG MODSEC_VER=v3.1.1
 
 # Install and configure modsecurity
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends libapache2-modsecurity git \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends libxml2 libxml2-dev libxml2-utils libaprutil1 libaprutil1-dev libapache2-modsecurity git \
     && git clone https://github.com/SpiderLabs/owasp-modsecurity-crs.git /usr/share/modsecurity-crs \
+    && cd  /usr/share/modsecurity-crs && git fetch --tags && git checkout $MODSEC_VER \
     && cp /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf \
     && apt-get purge -y git && apt-get -y autoremove  \
     && rm -rf /var/lib/apt/lists/* \
     && a2enmod security2 \
-    && cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
+    && mv /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
     && sed -i "s|SecRuleEngine DetectionOnly|SecRuleEngine On|g"  /etc/modsecurity/modsecurity.conf \
     && sed -i "s|SecResponseBodyAccess On|SecResponseBodyAccess Off|g"  /etc/modsecurity/modsecurity.conf \
     && sed -i "s|SecStatusEngine On|SecStatusEngine Off|g"  /etc/modsecurity/modsecurity.conf \
@@ -42,18 +45,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
                 pdo pdo_mysql \
     && pecl install imagick-3.4.4  \
     && docker-php-ext-enable imagick \
-    && a2enmod rewrite expires       
+    && a2enmod rewrite expires headers      
 
 # Setup php.ini settings
 COPY ini/*.ini /usr/local/etc/php/conf.d/
 
 # Copy additional apache2 config files
-COPY apache-conf/* /etc/apache2/mods-available/
+COPY mods-available/* /etc/apache2/mods-available/
+COPY conf-enabled/* /etc/apache2/conf-enabled/
+COPY sites-available/* /etc/apache2/sites-available/
+
+
+ARG WP_VERSION=5.2.2
+ARG WP_CHECKSUM=1f3af9172a9f2b89df784d547b215ea3a067f45e
 
 # Install wordpress
 RUN set -ex; \
-	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-5.2.2-en_GB.tar.gz"; \
-	echo "1f3af9172a9f2b89df784d547b215ea3a067f45e *wordpress.tar.gz" | sha1sum -c -; \
+	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-${WP_VERSION}-en_GB.tar.gz"; \
+	echo "${WP_CHECKSUM} *wordpress.tar.gz" | sha1sum -c -; \
 	tar -xzf wordpress.tar.gz -C /usr/src/; \
         mv /usr/src/wordpress/* /var/www/html/ ; \
 	rm wordpress.tar.gz; \
@@ -68,7 +77,7 @@ RUN curl -sS https://getcomposer.org/installer | php \
 ENV PATH="/root/.composer/vendor/bin:${PATH}"
 
 # Add htaccess and config
-COPY .htaccess wp-config.php ./
+COPY wordpress/*.php ./
 
 # Copy scripts
 COPY scripts/* /usr/local/bin/
@@ -85,5 +94,24 @@ RUN mkdir /var/www/html/settings ; \
 VOLUME /var/www/html/wp-content
 VOLUME /var/www/html/settings
 
+
+RUN apachectl configtest
 ENTRYPOINT ["docker-entrypoint"]
 CMD ["apache2-foreground"]
+
+
+FROM production AS development 
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        nano \
+    && rm -rf /var/lib/apt/lists/*
+
+# Xdebug
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && touch /var/log/xdebug.log && chmod 777 /var/log/xdebug.log \
+    # TODO: permissions don't work with new volumes
+    && mkdir /var/log/xdebug-profiler && chmod 777 /var/log/xdebug-profiler
+
+# Setup php.ini settings
+COPY dev-ini/*.ini /usr/local/etc/php/conf.d/

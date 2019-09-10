@@ -1,0 +1,7 @@
+.git
+.gitignore
+.travis.yml
+LICENSE.md
+README.md
+build.sh
+deploy.sh
