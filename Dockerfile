@@ -57,7 +57,7 @@ COPY sites-available/* /etc/apache2/sites-available/
 
 
 ARG WP_VERSION=5.2.4
-ARG WP_CHECKSUM=96e3e8f65104cba091a54aa8b8bc1af4f1fc8184
+ARG WP_CHECKSUM=1eb60a37e98d4d1e8a990ad0c934b7ed48495ad4
 
 # Install wordpress
 RUN set -ex; \
