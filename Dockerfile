@@ -56,11 +56,11 @@ COPY conf-enabled/* /etc/apache2/conf-enabled/
 COPY sites-available/* /etc/apache2/sites-available/
 
 
-ARG WP_VERSION=5.2.4
-ARG WP_CHECKSUM=1eb60a37e98d4d1e8a990ad0c934b7ed48495ad4
+ARG WP_VERSION=5.3
 
 # Install wordpress
 RUN set -ex; \
+        WP_CHECKSUM=$(curl --silent --raw "https://en-gb.wordpress.org/wordpress-${WP_VERSION}-en_GB.tar.gz.sha1"); \
 	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-${WP_VERSION}-en_GB.tar.gz"; \
 	echo "${WP_CHECKSUM} *wordpress.tar.gz" | sha1sum -c -; \
 	tar -xzf wordpress.tar.gz -C /usr/src/; \
