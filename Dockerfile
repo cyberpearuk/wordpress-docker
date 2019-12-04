@@ -1,9 +1,9 @@
-FROM php:7.1.29-apache AS production
+FROM php:7.2-apache AS production
 
 ARG MODSEC_VER=v3.1.1
 
 # Install and configure modsecurity
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends libxml2 libxml2-dev libxml2-utils libaprutil1 libaprutil1-dev libapache2-modsecurity git \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends libxml2 libxml2-dev libxml2-utils libaprutil1 libaprutil1-dev libapache2-mod-security2 git \
     && git clone https://github.com/SpiderLabs/owasp-modsecurity-crs.git /usr/share/modsecurity-crs \
     && cd  /usr/share/modsecurity-crs && git fetch --tags && git checkout $MODSEC_VER \
     && cp /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf \
@@ -28,10 +28,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libjpeg-dev \
         libmagickwand-dev \
         libpng-dev \
-        # Install ssmtp
-        ssmtp \
+        # Install msmtp
+        msmtp \
         # Install unzip
         unzip \
+        # Required for PECL zip
+        libzip-dev \
     && rm -rf /var/lib/apt/lists/* \
     && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
     && docker-php-ext-install \
@@ -44,6 +46,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
                 # Install PDO
                 pdo pdo_mysql \
     && pecl install imagick-3.4.4  \
+    # Install PECL zip >= 1.14 for zip encryption
+    && pecl install zip-1.15.2  \
     && docker-php-ext-enable imagick \
     && a2enmod rewrite expires headers      
 
