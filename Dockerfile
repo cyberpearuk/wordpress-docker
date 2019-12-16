@@ -42,13 +42,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		gd \
 		mysqli \
 		opcache \
-		zip \
                 # Install PDO
-                pdo pdo_mysql \
-    && pecl install imagick-3.4.4  \
-    # Install PECL zip >= 1.14 for zip encryption
-    && pecl install zip-1.15.2  \
+                pdo pdo_mysql
+
+RUN pecl install imagick-3.4.4  \
     && docker-php-ext-enable imagick \
+    # Install PECL zip >= 1.14 for zip encryption
+    && pecl install zip-1.14.0  \
+    && docker-php-ext-enable zip \
     && a2enmod rewrite expires headers      
 
 # Setup php.ini settings
