@@ -17,7 +17,7 @@ if [ -z ${EMAIL_SMTP_HOST+x} ]; then
     echo "Not setting up mail"
 else
     # Configure mSMTP
-    mkdir /etc/msmtp
+    test -d /etc/msmtp || mkdir /etc/msmtp
     echo "
 account default
 host $EMAIL_SMTP_HOST
