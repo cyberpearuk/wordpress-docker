@@ -16,27 +16,31 @@ fi
 if [ -z ${EMAIL_SMTP_HOST+x} ]; then
     echo "Not setting up mail"
 else
+    # Configure mSMTP
+    mkdir /etc/msmtp
+    echo "
+account default
+host $EMAIL_SMTP_HOST
+from $EMAIL_AUTH_USER
+auth on
+port $EMAIL_SMTP_PORT
+user $EMAIL_AUTH_USER
+password $EMAIL_AUTH_PASS
+logfile /var/log/msmtp.log
+tls on
+tls_starttls on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+" > /etc/msmtp/msmtp.conf
+    touch /var/log/msmtp.log
+    chmod 600 /etc/msmtp/msmtp.conf
+    chown www-data /etc/msmtp/msmtp.conf /var/log/msmtp.log
+
     echo "Setting up mail"
     ## SETUP MAIL ##
     echo "[mail function]
-sendmail_path=/usr/sbin/ssmtp -t -i
-" >> /usr/local/etc/php/conf.d/sendmail.ini
+sendmail_path=$(which msmtp) -C /etc/msmtp/msmtp.conf -t
+" >> /usr/local/etc/php/conf.d/smtp.ini
 
-    echo "
-mailhub=$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
-rewriteDomain=$EMAIL_HOST
-AuthUser=$EMAIL_AUTH_USER
-AuthPass=$EMAIL_AUTH_PASS
-AuthMethod=LOGIN
-UseTLS=YES
-UseSTARTTLS=YES
-FromLineOverride=YES
-" > /etc/ssmtp/ssmtp.conf
-
-    echo "
-root:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
-www-data:$EMAIL_AUTH_USER:$EMAIL_SMTP_HOST:$EMAIL_SMTP_PORT
-" > /etc/ssmtp/revaliases
 
     # Clear $EMAIL_AUTH_PASS to prevent leaking to applications
     export EMAIL_AUTH_PASS=""
