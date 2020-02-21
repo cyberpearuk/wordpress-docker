@@ -46,7 +46,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		opcache \
                 # Install PDO
                 pdo pdo_mysql
-
 RUN pecl install imagick-3.4.4  \
     && docker-php-ext-enable imagick \
     # Install PECL zip >= 1.14 for zip encryption
@@ -78,9 +77,10 @@ RUN set -ex; \
 # Install tools
 RUN curl -sS https://getcomposer.org/installer | php \
   && chmod +x composer.phar \
-  && php composer.phar global require cyberpearuk/wp-db-tools:1.3.0 \
+  && php composer.phar global require cyberpearuk/wp-db-tools:1.4.0 \
   # Remove composer now, we shouldn't need it after this
   && rm composer.phar
+
 ENV PATH="/root/.composer/vendor/bin:${PATH}"
 
 # Add htaccess and config
