@@ -1,0 +1,3 @@
+#!/bin/bash
+docker push $IMAGE_NAME:$DOCKER_TAG
+docker push $IMAGE_NAME-dev:$DOCKER_TAG
