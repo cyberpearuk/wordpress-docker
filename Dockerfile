@@ -62,7 +62,7 @@ COPY conf-enabled/* /etc/apache2/conf-enabled/
 COPY sites-available/* /etc/apache2/sites-available/
 
 
-ARG WP_VERSION=5.3.2
+ARG WP_VERSION=5.4
 
 # Install wordpress
 RUN set -ex; \
