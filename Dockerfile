@@ -1,3 +1,22 @@
+
+FROM ubuntu AS fetch-wp
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+        libcurl4-openssl-dev \
+    && apt-get purge -y git && apt-get -y autoremove
+ARG WP_VERSION=5.3.2
+# Install wordpress
+RUN set -ex; \
+        WP_CHECKSUM=$(curl --silent --raw "https://en-gb.wordpress.org/wordpress-${WP_VERSION}-en_GB.tar.gz.sha1"); \
+	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-${WP_VERSION}-en_GB.tar.gz"; \
+	echo "${WP_CHECKSUM} *wordpress.tar.gz" | sha1sum -c -; \
+	tar -xzf wordpress.tar.gz -C /usr/src/; \
+	rm wordpress.tar.gz; \
+        rm /usr/src/wordpress/wp-config-sample.php 
+
+
+
 FROM php:7.2-apache AS production
 
 ARG MODSEC_VER=v3.1.1
@@ -61,23 +80,13 @@ COPY mods-available/* /etc/apache2/mods-available/
 COPY conf-enabled/* /etc/apache2/conf-enabled/
 COPY sites-available/* /etc/apache2/sites-available/
 
-
-ARG WP_VERSION=5.3.2
-
-# Install wordpress
-RUN set -ex; \
-        WP_CHECKSUM=$(curl --silent --raw "https://en-gb.wordpress.org/wordpress-${WP_VERSION}-en_GB.tar.gz.sha1"); \
-	curl -s -o wordpress.tar.gz -fSL "https://en-gb.wordpress.org/wordpress-${WP_VERSION}-en_GB.tar.gz"; \
-	echo "${WP_CHECKSUM} *wordpress.tar.gz" | sha1sum -c -; \
-	tar -xzf wordpress.tar.gz -C /usr/src/; \
-        mv /usr/src/wordpress/* /var/www/html/ ; \
-	rm wordpress.tar.gz; \
-        rm wp-config-sample.php
+# Copy in WordPress
+COPY --from=0 /usr/src/wordpress/ /var/www/html/
 
 # Install tools
 RUN curl -sS https://getcomposer.org/installer | php \
   && chmod +x composer.phar \
-  && php composer.phar global require cyberpearuk/wp-db-tools:1.4.0 \
+  && php composer.phar global require cyberpearuk/wp-db-tools \
   # Remove composer now, we shouldn't need it after this
   && rm composer.phar
 
