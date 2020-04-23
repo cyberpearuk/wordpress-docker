@@ -15,32 +15,7 @@ RUN set -ex; \
 	rm wordpress.tar.gz; \
         rm /usr/src/wordpress/wp-config-sample.php 
 
-
-
 FROM php:7.2-apache AS production
-
-ARG MODSEC_VER=v3.1.1
-
-# Install and configure modsecurity
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends libxml2 libxml2-dev libxml2-utils libaprutil1 libaprutil1-dev libapache2-mod-security2 git \
-    && git clone https://github.com/SpiderLabs/owasp-modsecurity-crs.git /usr/share/modsecurity-crs \
-    && cd  /usr/share/modsecurity-crs && git fetch --tags && git checkout $MODSEC_VER \
-    && cp /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf \
-    && apt-get purge -y git && apt-get -y autoremove  \
-    && rm -rf /var/lib/apt/lists/* \
-    && a2enmod security2 \
-    && mv /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecRuleEngine DetectionOnly|SecRuleEngine On|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecResponseBodyAccess On|SecResponseBodyAccess Off|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecStatusEngine On|SecStatusEngine Off|g"  /etc/modsecurity/modsecurity.conf \
-    # Set memory limit to ~64MB
-    && sed -i "s|SecRequestBodyLimit 13107200|SecRequestBodyLimit 67108864|g"  /etc/modsecurity/modsecurity.conf \
-    # Fix for "ModSecurity: Request body no files data length is larger than the configured limit"
-    && sed -i "s|SecRequestBodyNoFilesLimit 131072|SecRequestBodyNoFilesLimit 524288|g"  /etc/modsecurity/modsecurity.conf \
-    && sed -i "s|SecRequestBodyInMemoryLimit 13107200|SecRequestBodyInMemoryLimit 524288|g"  /etc/modsecurity/modsecurity.conf \
-    ## Fix "Execution error - PCRE limits exceeded" by increasing to 5MB - however this can make it easier to DDOS
-    && echo "SecPcreMatchLimit 5242880" >> /etc/modsecurity/modsecurity.conf \
-    && echo "SecPcreMatchLimitRecursion 5242880" >> /etc/modsecurity/modsecurity.conf
 
 # Setup environment for WordPress and Tools (https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions)
 RUN apt-get update && apt-get install -y --no-install-recommends \
