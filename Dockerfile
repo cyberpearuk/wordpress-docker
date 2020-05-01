@@ -52,7 +52,6 @@ COPY ini/*.ini /usr/local/etc/php/conf.d/
 
 # Copy additional apache2 config files
 COPY mods-available/* /etc/apache2/mods-available/
-COPY conf-enabled/* /etc/apache2/conf-enabled/
 COPY sites-available/* /etc/apache2/sites-available/
 
 # Copy in WordPress
