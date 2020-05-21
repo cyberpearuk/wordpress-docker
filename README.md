@@ -63,4 +63,4 @@ docker exec -it <container> test-sendmail me@mail.com
 
 ## Maintainer
 
-This repository is maintained by https://www.cyberpear.co.uk.
+This repository is maintained by [Black Pear Digital](https://www.blackpeardigital.co.uk).
